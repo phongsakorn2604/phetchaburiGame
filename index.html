@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แฟนพันธุ์แท้ เพชรบุรี</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body { 
+            font-family: 'Kanit', sans-serif; 
+            background-color: #1a2a40;
+            background-image: 
+                radial-gradient(circle at 10% 10%, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 20%),
+                radial-gradient(circle at 90% 60%, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0) 30%),
+                radial-gradient(circle at 30% 90%, rgba(251, 191, 36, 0.05) 0%, rgba(251, 191, 36, 0) 20%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin: 0;
+            position: relative;
+            padding: 2rem 0;
+        }
+        /* Background decor */
+        .bg-decor { position: absolute; z-index: -1; }
+        .bg-decor.triangle { width: 0; height: 0; border-left: 30px solid transparent; border-right: 30px solid transparent; border-bottom: 50px solid rgba(255, 255, 255, 0.05); }
+        .bg-decor.zigzag { font-size: 2rem; color: rgba(255,255,255,0.05); letter-spacing: 2px; }
+        .bg-decor.dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(251, 191, 36, 0.4); }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            padding: 1rem;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header-section {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        h1 { 
+            font-size: 2.8rem; 
+            margin-bottom: 0; 
+            color: #FBBF24; /* Yellow */
+            font-weight: 700;
+            line-height: 1.2;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+        }
+        .subtitle { 
+            font-size: 2.5rem; 
+            color: white; 
+            font-weight: 700;
+            margin-bottom: 1rem; 
+            margin-top: 0;
+        }
+        .badge {
+            background-color: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #F87171; /* Orange/Red-ish */
+            padding: 0.4rem 1.5rem;
+            border-radius: 9999px;
+            font-size: 1rem;
+            display: inline-block;
+        }
+
+        /* Card Styles */
+        .card { 
+            background: #FFFDF8; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
+            border-radius: 20px; 
+            border: 4px solid #FBBF24;
+            padding: 2rem;
+            color: #1f2937;
+            width: 100%;
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px dashed #FBBF24;
+            padding-bottom: 1.5rem;
+        }
+        
+        .icon-circle {
+            background: #F97316;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 6px rgba(249, 115, 22, 0.3);
+        }
+
+        .card-header-text h2 {
+            color: #1e3a8a;
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        .card-header-text p {
+            margin: 0;
+            color: #6B7280;
+            font-size: 0.9rem;
+        }
+
+        .form-group { margin-bottom: 1.2rem; }
+        .form-group label { display: block; margin-bottom: 0.4rem; font-weight: 600; color: #374151; font-size: 0.95rem; }
+        .form-group input { 
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: none;
+            background: #F3F4F6;
+            border-radius: 12px;
+            font-family: 'Kanit', sans-serif;
+            font-size: 1rem;
+            color: #4B5563;
+        }
+        .form-group input:focus { outline: 2px solid #FBBF24; }
+
+        .avatars { 
+            display: flex; 
+            gap: 0.5rem; 
+            font-size: 1.5rem; 
+            flex-wrap: wrap;
+        }
+        .avatar-option { 
+            cursor: pointer; 
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #F3F4F6;
+            border-radius: 50%; 
+            transition: all 0.2s; 
+            border: 2px solid transparent;
+        }
+        .avatar-option:hover { background: #E5E7EB; }
+        .avatar-option.selected { 
+            background: #F97316; 
+            box-shadow: 0 0 15px rgba(249, 115, 22, 0.5);
+            transform: scale(1.1);
+        }
+
+        .btn-play {
+            width: 100%;
+            background: linear-gradient(135deg, #F97316, #EA580C);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-family: 'Kanit', sans-serif;
+            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+            margin-top: 1rem;
+        }
+        .btn-play:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(249, 115, 22, 0.6);
+        }
+
+        #adminLoginBtn { 
+            margin-top: 2rem;
+            color: #9CA3AF; 
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 0.4rem 1rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: 'Kanit', sans-serif;
+        }
+        #adminLoginBtn:hover { background: rgba(255,255,255,0.1); color: white; }
+    </style>
+</head>
+<body>
+    <!-- Background Decorations -->
+    <div class="bg-decor zigzag" style="top: 15%; left: 30%;">〰〰</div>
+    <div class="bg-decor zigzag" style="bottom: 15%; left: 10%;">〰〰</div>
+    <div class="bg-decor triangle" style="top: 10%; right: 15%;"></div>
+    <div class="bg-decor triangle" style="bottom: 20%; right: 25%; transform: rotate(180deg);"></div>
+    <div class="bg-decor dot" style="top: 25%; left: 15%;"></div>
+    <div class="bg-decor dot" style="bottom: 30%; right: 10%;"></div>
+    <div class="bg-decor dot" style="top: 50%; left: 10%; background: rgba(16, 185, 129, 0.4);"></div>
+
+    <div class="container">
+        <div class="header-section">
+            <h1>Phetchaburi</h1>
+            <div class="badge">📍 ที่นี่คือที่ไหนในเมืองเพชร?</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <div class="icon-circle">🏠</div>
+                <div class="card-header-text">
+                    <h2>เข้าร่วมห้อง</h2>
+                    <p>กรอกข้อมูลเพื่อเริ่มเล่น</p>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="playerName">ชื่อของคุณ</label>
+                <input type="text" id="playerName" placeholder="กรอกชื่อเล่นของคุณ">
+            </div>
+
+            <div class="form-group">
+                <label>เลือกตัวละคร</label>
+                <div class="avatars" id="avatarSelection">
+                    <span class="avatar-option selected" data-avatar="😎">😎</span>
+                    <span class="avatar-option" data-avatar="🤩">🤩</span>
+                    <span class="avatar-option" data-avatar="👽">👽</span>
+                    <span class="avatar-option" data-avatar="🐱">🐱</span>
+                    <span class="avatar-option" data-avatar="🦊">🦊</span>
+                    <span class="avatar-option" data-avatar="🐼">🐼</span>
+                    <span class="avatar-option" data-avatar="🦁">🦁</span>
+                    <span class="avatar-option" data-avatar="🌞">🌞</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="roomIdInput">รหัสห้อง</label>
+                <input type="text" id="roomIdInput" placeholder="รหัส 6 หลัก เช่น PHBR01" maxlength="6" style="text-transform:uppercase; letter-spacing: 1px;">
+            </div>
+
+            <button class="btn-play" id="joinBtn">🎮 เข้าเล่นเกม</button>
+            <div id="joinError" class="error-msg" style="text-align: center; margin-top: 1rem; color: #EF4444;"></div>
+        </div>
+
+        <!-- Admin Login Button -->
+        <button id="adminLoginBtn">⚙️ สำหรับผู้ดูแลระบบ (Admin)</button>
+    </div>
+
+    <!-- Admin Login Modal -->
+    <div id="adminModal" class="overlay" style="display: none;">
+        <div class="modal-content card" style="max-width: 400px; text-align: center; width: 90%; border-top: 6px solid #4F46E5; border: none;">
+            <h2 style="color: #1F2937; border: none; margin-bottom: 0.5rem;">เข้าสู่ระบบ Admin</h2>
+            <p class="text-sm text-gray" style="margin-bottom: 1.5rem;">กรุณาใส่รหัสผ่านเพื่อจัดการห้องเกม</p>
+            <input type="password" id="adminPassword" style="width: 100%; padding: 1rem; border-radius: 12px; border: 1px solid #ccc; margin-bottom: 1.5rem; font-family: 'Kanit'; font-size: 1rem; background: #F3F4F6;" placeholder="รหัสผ่าน...">
+            <div style="display: flex; gap: 1rem;">
+                <button id="cancelAdminBtn" class="btn" style="flex: 1; background: #E5E7EB; color: #4B5563; border-radius: 12px;">ยกเลิก</button>
+                <button id="confirmAdminBtn" class="btn" style="flex: 1; background: #4F46E5; color: white; border-radius: 12px;">ตกลง</button>
+            </div>
+            <div id="adminError" class="error-msg" style="margin-top: 1rem; color: #EF4444; display: none;">รหัสผ่านไม่ถูกต้อง!</div>
+        </div>
+    </div>
+
+    <script>
+        // Avatar selection logic
+        let selectedAvatar = '😎';
+        document.querySelectorAll('.avatar-option').forEach(el => {
+            el.addEventListener('click', function() {
+                document.querySelectorAll('.avatar-option').forEach(a => a.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedAvatar = this.dataset.avatar;
+            });
+        });
+
+        // Admin Modal Logic
+        const adminModal = document.getElementById('adminModal');
+        const adminPasswordInput = document.getElementById('adminPassword');
+        const adminError = document.getElementById('adminError');
+
+        document.getElementById('adminLoginBtn').addEventListener('click', () => {
+            adminModal.style.display = 'flex';
+            adminPasswordInput.value = '';
+            adminError.style.display = 'none';
+            adminPasswordInput.focus();
+        });
+
+        document.getElementById('cancelAdminBtn').addEventListener('click', () => {
+            adminModal.style.display = 'none';
+        });
+
+        document.getElementById('confirmAdminBtn').addEventListener('click', () => {
+            if (adminPasswordInput.value === '2539') {
+                window.location.href = 'admin.html';
+            } else {
+                adminError.style.display = 'block';
+            }
+        });
+
+        // Allow pressing Enter in password field
+        adminPasswordInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('confirmAdminBtn').click();
+            }
+        });
+
+        document.getElementById('joinBtn').addEventListener('click', () => {
+            const name = document.getElementById('playerName').value.trim();
+            const roomId = document.getElementById('roomIdInput').value.trim().toUpperCase();
+            
+            if (!name || !roomId) {
+                document.getElementById('joinError').innerText = "กรุณากรอกชื่อและรหัสห้องให้ครบถ้วน";
+                return;
+            }
+            
+            // Store player info in sessionStorage to use in game.html
+            sessionStorage.setItem('playerName', name);
+            sessionStorage.setItem('playerAvatar', selectedAvatar);
+            sessionStorage.setItem('roomId', roomId);
+            
+            window.location.href = 'game.html';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เกมทายสถานที่ - กำลังเล่น</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body, button { font-family: 'Kanit', sans-serif; }
+        
+        /* Full Screen Image Layout */
+        .game-layout { display: flex; flex-direction: column; height: 100vh; width: 100%; overflow: hidden; }
+        .game-content { position: relative; flex: 1; display: block; margin: 0; padding: 0; }
+        .image-section.card {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            margin: 0; padding: 0; border-radius: 0; border: none; z-index: 1;
+            background: #000; display: flex; align-items: center; justify-content: center;
+        }
+        .image-section img { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* Floating Map Section */
+        .map-section.card {
+            position: absolute;
+            bottom: 80px; right: 20px;
+            width: 400px; max-width: calc(100vw - 40px);
+            height: 500px; max-height: 60vh;
+            z-index: 11;
+            margin: 0; padding: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: none; /* hidden by default */
+            flex-direction: column;
+        }
+        .map-section.active { display: flex; }
+        
+        /* Toggle Map Button */
+        #toggleMapBtn {
+            position: absolute;
+            bottom: 20px; right: 20px;
+            z-index: 10;
+            width: 60px;
+            height: 60px;
+            padding: 0;
+            font-size: 1.8rem;
+            border-radius: 50%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            display: flex; justify-content: center; align-items: center;
+        }
+        
+        /* Status Message Overlay */
+        #statusOverlay {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.7); color: white;
+            padding: 0.8rem 1.5rem; border-radius: 9999px;
+            font-size: 1.1rem; z-index: 5; display: none;
+        }
+    </style>
+</head>
+<body class="game-body">
+    
+    <!-- Waiting Screen -->
+    <div id="waitingScreen" class="overlay">
+        <div class="card text-center" style="max-width: 95%; width: 600px; position: relative;">
+            <button onclick="window.location.href='/'" style="position: absolute; top: 15px; left: 15px; background: #f3f4f6; border: none; font-size: 1rem; cursor: pointer; color: #4B5563; display: flex; align-items: center; gap: 0.3rem; padding: 0.4rem 0.8rem; border-radius: 8px; transition: 0.2s;">
+                &larr; กลับ
+            </button>
+            <h2 style="margin-top: 0.5rem;">รอแอดมินเริ่มเกม...</h2>
+            <p>คุณอยู่ในห้อง: <strong id="roomCodeDisplay"></strong></p>
+            
+            <div style="margin: 1.5rem 0; text-align: left; background: #f9fafb; border-radius: 8px; padding: 1rem; border: 1px solid #e5e7eb; max-height: 250px; overflow-y: auto;">
+                <h3 style="font-size: 1rem; color: #4B5563; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 0.8rem; margin-top: 0;">ผู้เล่นที่รออยู่ (<span id="waitingPlayerCount">0</span>)</h3>
+                <div id="waitingPlayerList" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.8rem;">
+                    <!-- Player list injected here -->
+                    <div style="color: #9CA3AF; text-align: center; font-size: 0.9rem; grid-column: 1 / -1;">กำลังโหลดรายชื่อ...</div>
+                </div>
+            </div>
+
+            <div class="loader" style="margin: 0 auto;"></div>
+        </div>
+    </div>
+
+    <!-- Game UI -->
+    <div class="game-layout">
+        <!-- Top bar -->
+        <header class="game-header">
+            <div class="player-info">
+                <span id="playerAvatarDisplay" class="avatar-sm"></span>
+                <span id="playerNameDisplay"></span>
+            </div>
+            <div class="timer-container">
+                ⏱️ <span id="timeDisplay">15</span> วินาที
+            </div>
+            <div class="score-container">
+                คะแนน: <span id="scoreDisplay">0</span>
+            </div>
+        </header>
+
+        <!-- Main game area -->
+        <div class="game-content">
+            <!-- Left: Image (Now Full Screen) -->
+            <div class="image-section card">
+                <img id="locationImage" src="" alt="ที่นี่คือที่ไหน?" style="display: none;">
+                <div id="imagePlaceholder">รอเริ่มรอบต่อไป...</div>
+            </div>
+
+            <!-- Status Overlay (e.g., "Waiting for timer...") -->
+            <div id="statusOverlay">ส่งคำตอบแล้ว รอเวลาหมด...</div>
+
+            <!-- Toggle Map Button -->
+            <button id="toggleMapBtn" class="btn primary" title="เปิดแผนที่">🗺️</button>
+
+            <!-- Right: Map (Now Floating Modal) -->
+            <div class="map-section card" id="mapSection">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <h3 style="margin: 0;">📍 ปักหมุดตำแหน่ง</h3>
+                    <button id="closeMapBtn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+                </div>
+                <div id="map"></div>
+                <div class="map-controls">
+                    <button id="submitGuessBtn" class="btn primary" disabled>ส่งคำตอบ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result Modal -->
+    <div id="resultModal" class="overlay" style="display: none;">
+        <div class="card result-card text-center">
+            <h2 id="resultTitle">สรุปผลรอบนี้</h2>
+            <p id="resultLocationName" class="font-bold"></p>
+            <p>ความคลาดเคลื่อน: <span id="resultDistance"></span> กม.</p>
+            
+            <div class="points-breakdown">
+                <div>คะแนนระยะทาง: +<span id="resultDistanceScore"></span></div>
+                <div>โบนัสเวลา: +<span id="resultTimeBonus"></span></div>
+                <div class="total-points">รวม: +<span id="resultTotalScore"></span></div>
+            </div>
+            
+            <p class="mt-4 text-sm text-gray">กำลังเริ่มรอบถัดไปอัตโนมัติ...</p>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="gameOverModal" class="overlay" style="display: none;">
+        <div class="card result-card text-center" style="border-top: 5px solid #4F46E5; width: 600px; max-width: 95vw;">
+            <h1 style="color: #4F46E5; margin-bottom: 0.5rem; font-size: 2rem;">🎉 จบเกมแล้ว! 🎉</h1>
+            <p style="font-size: 1.1rem; color: #4B5563; margin-bottom: 1rem;">สรุปผลคะแนนรวมของทุกคน</p>
+            
+            <!-- Podium / Leaderboard -->
+            <div id="leaderboardPodium" style="display: flex; justify-content: center; align-items: flex-end; gap: 1rem; margin-top: 2rem; margin-bottom: 2rem; min-height: 220px;">
+                <!-- Podium places injected by JS -->
+            </div>
+            
+            <div style="background: #f3f4f6; padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid #e5e7eb;">
+                <p style="font-size: 0.9rem; color: #6B7280; margin-bottom: 0.2rem;">คะแนนรวมของคุณ</p>
+                <div style="font-size: 2.5rem; font-weight: bold; color: #10B981; line-height: 1;">
+                    <span id="finalScoreDisplay">0</span>
+                </div>
+            </div>
+            
+            <button onclick="returnToLobby()" class="btn primary" style="font-size: 1.1rem; padding: 0.8rem; margin-bottom: 0.5rem; width: 100%;">🔙 กลับไปห้องรอแอดมิน (เล่นต่อ)</button>
+            <button onclick="window.location.href='/'" class="btn" style="background: transparent; color: #6B7280; border: none; text-decoration: underline; padding: 0.5rem; width: 100%;">ออกจากการเล่น</button>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/client.js"></script>
+</body>
+</html>

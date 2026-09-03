@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบแอดมิน - GeoGuess</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body, button, input { font-family: 'Kanit', sans-serif; }
+        #setupMap { height: 250px; border-radius: 8px; margin-bottom: 1rem; }
+        .location-item { background: #f3f4f6; padding: 0.5rem; border-radius: 4px; margin-bottom: 0.5rem; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="container admin-container">
+        <header class="admin-header">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <h1 style="margin: 0;">ระบบจัดการห้องเกม (Admin)</h1>
+                <button id="openSetupBtn" class="btn secondary" style="width: auto; padding: 0.5rem 1rem;">➕ จัดการโจทย์</button>
+            </div>
+            <div class="room-info">
+                รหัสห้อง: <span id="displayRoomId" class="highlight">กำลังโหลด...</span>
+            </div>
+        </header>
+
+        <!-- Setup Game Locations Modal -->
+        <div id="setupModal" class="overlay" style="display: none;">
+            <div class="card" id="setupCard" style="border-top: 5px solid var(--primary); width: 900px; max-width: 95vw; max-height: 90vh; overflow-y: auto; position: relative;">
+                
+                <!-- Close Button -->
+                <button id="closeSetupBtn" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #9CA3AF;">&times;</button>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f3f4f6; padding-bottom: 1rem; margin-bottom: 1.5rem; padding-right: 2rem;">
+                    <div>
+                        <h2 style="margin: 0; color: var(--primary);">📍 สร้างโจทย์ของตัวเอง</h2>
+                    <p class="text-sm text-gray" style="margin: 0; margin-top: 0.5rem;">เพิ่มรูปภาพและปักหมุดตำแหน่งที่ถูกต้องก่อนเริ่มเกม</p>
+                </div>
+                <div style="background: #f9fafb; padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid #e5e7eb; display: flex; align-items: center;">
+                    <span style="font-size: 0.9rem; margin-right: 0.5rem;">📂 เลือกชุดโจทย์:</span>
+                    <select id="savedSetsSelect" style="padding: 0.4rem; border-radius: 6px; font-family: 'Kanit'; border: 1px solid #ccc; outline: none; flex: 1;">
+                        <option value="">-- เลือกชุดโจทย์ที่บันทึกไว้ --</option>
+                    </select>
+                    <button id="loadSetBtn" class="btn secondary" style="width: auto; padding: 0.4rem 1rem; font-size: 0.9rem; margin-left: 0.5rem;">โหลด</button>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 300px; background: #f9fafb; padding: 1.5rem; border-radius: 12px; border: 1px solid #e5e7eb;">
+                    <div class="form-group">
+                        <label>🏷️ ชื่อสถานที่ (แสดงตอนเฉลย)</label>
+                        <input type="text" id="locName" class="form-control" placeholder="เช่น หอไอเฟล, วัดพระแก้ว">
+                    </div>
+                    <div class="form-group">
+                        <label>🖼️ รูปภาพ (อัปโหลด หรือใส่ URL)</label>
+                        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                            <input type="file" id="locImgFile" accept="image/*" class="form-control" style="padding: 0.4rem; font-size: 0.9rem; flex: 1; cursor: pointer;">
+                            <button id="uploadImgBtn" class="btn secondary" style="width: auto; padding: 0 1.5rem; white-space: nowrap; font-size: 0.9rem;">☁️ อัปโหลด</button>
+                        </div>
+                        <input type="text" id="locImg" class="form-control" placeholder="https://... (สามารถวางลิงก์รูปได้เลย)">
+                    </div>
+                    <label>🗺️ ปักหมุดบนแผนที่</label>
+                    <div id="setupMap" style="border: 2px solid #ccc;"></div>
+                    <button id="addLocBtn" class="btn primary" style="width: 100%; font-size: 1.1rem; padding: 0.8rem;" disabled>➕ เพิ่มสถานที่นี้</button>
+                </div>
+                
+                <div style="flex: 1; min-width: 300px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f3f4f6; padding-bottom: 0.5rem;">
+                        <h3 style="margin: 0;">📋 รายการสถานที่ที่จะเล่น (<span id="locCount" style="color: var(--primary);">0</span>)</h3>
+                        <button id="saveSetBtn" class="btn secondary" style="width: auto; padding: 0.4rem 1rem; font-size: 0.9rem; display: none; background: #10B981; color: white; border: none;">💾 บันทึกเป็นชุดโจทย์</button>
+                    </div>
+                    <div id="locationsList" style="max-height: 350px; overflow-y: auto; margin-top: 1rem;">
+                        <p class="text-gray text-sm">ยังไม่มีสถานที่ กรุณาเพิ่มสถานที่ทางซ้าย</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <div class="admin-layout">
+            <!-- Sidebar: Controls -->
+            <div class="admin-sidebar card">
+                <h2>ควบคุมเกม</h2>
+                <button id="startRoundBtn" class="btn primary" disabled>เริ่มรอบแรก</button>
+                <div id="gameStatus" class="status-msg">รอเพิ่มโจทย์/ผู้เล่น...</div>
+                
+                <h3 class="mt-4">ข้อมูลรอบ</h3>
+                <p>รอบที่: <span id="roundCounter">0 / ?</span></p>
+                <p style="margin-top:20px;"><a href="/" style="color:#6B7280;">&larr; กลับหน้าหลัก</a></p>
+            </div>
+
+            <!-- Main: Scoreboard -->
+            <div class="admin-main card">
+                <h2>ตารางคะแนน (Real-time)</h2>
+                <div class="table-container">
+                    <table id="scoreboardTable">
+                        <thead>
+                            <tr>
+                                <th>ผู้เล่น</th>
+                                <th>คะแนน (รวม)</th>
+                                <th>สถานะล่าสุด</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scoreboardBody">
+                            <tr>
+                                <td colspan="3" class="text-center">ยังไม่มีผู้เล่น</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
