@@ -114,9 +114,9 @@ function calculateScore(distanceKm, timeRemainingSeconds) {
     let distanceScore = 200 * Math.exp(-distanceKm / 20); // Exponential decay (scale: 20km)
     distanceScore = Math.max(0, Math.round(distanceScore));
 
-    // Time bonus: up to 80 points (proportional to 15 seconds)
-    // If they guess instantly (15s), they get 80. If 0s, they get 0.
-    const timeBonus = Math.round((timeRemainingSeconds / 15) * 80);
+    // Time bonus: up to 80 points (proportional to 25 seconds)
+    // If they guess instantly (25s), they get 80. If 0s, they get 0.
+    const timeBonus = Math.round((timeRemainingSeconds / 25) * 80);
 
     return { distanceScore, timeBonus, total: distanceScore + timeBonus };
 }
@@ -204,11 +204,11 @@ io.on('connection', (socket) => {
             imageUrl: currentLocation.imageUrl,
             round: room.currentRoundIndex + 1,
             totalRounds: room.locations.length,
-            timeLimit: 15
+            timeLimit: 25
         });
 
         // Start timer on server
-        let timeLeft = 15;
+        let timeLeft = 25;
         room.timerInterval = setInterval(() => {
             timeLeft--;
             if (timeLeft <= 0) {
