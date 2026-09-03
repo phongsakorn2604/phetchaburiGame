@@ -68,7 +68,7 @@ let currentMarker = null;
 let actualMarker = null;
 let linePath = null;
 
-let timeRemaining = 15;
+let timeRemaining = 25;
 let timerInterval = null;
 let canGuess = false;
 
