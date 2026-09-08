@@ -1,3 +1,13 @@
+
+const Toast = Swal.mixin({
+  toast: true,
+  position: 'top-end',
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true,
+  background: 'var(--card-light)',
+  color: 'var(--text)'
+});
 const socket = io();
 
 let currentRoomId = null;
@@ -40,12 +50,19 @@ document.getElementById('locImg').addEventListener('input', checkAddLocBtn);
 document.getElementById('uploadImgBtn').addEventListener('click', async () => {
     const fileInput = document.getElementById('locImgFile');
     if (!fileInput.files || fileInput.files.length === 0) {
-        alert('กรุณาเลือกไฟล์รูปภาพก่อนอัปโหลด');
+        Toast.fire({ icon: 'warning', title: 'กรุณาเลือกไฟล์รูปภาพก่อนอัปโหลด' });
+        return;
+    }
+
+    if (fileInput.files.length > 3) {
+        Toast.fire({ icon: 'warning', title: 'อัปโหลดได้สูงสุด 3 รูปภาพ' });
         return;
     }
 
     const formData = new FormData();
-    formData.append('image', fileInput.files[0]);
+    for(let i = 0; i < fileInput.files.length; i++) {
+        formData.append('images', fileInput.files[i]);
+    }
 
     try {
         document.getElementById('uploadImgBtn').innerText = 'กำลังอัปโหลด...';
@@ -57,16 +74,19 @@ document.getElementById('uploadImgBtn').addEventListener('click', async () => {
         });
         const data = await res.json();
         
-        if (data.imageUrl) {
-            document.getElementById('locImg').value = data.imageUrl;
+        if (data.imageUrls) {
+            // Append to existing if any
+            let current = document.getElementById('locImg').value.trim();
+            if(current && !current.endsWith(',')) current += ', ';
+            document.getElementById('locImg').value = current + data.imageUrls.join(', ');
             checkAddLocBtn();
-            alert('อัปโหลดรูปภาพสำเร็จ!');
+            Toast.fire({ icon: 'success', title: 'อัปโหลดรูปภาพสำเร็จ!' });
         } else {
-            alert('เกิดข้อผิดพลาดในการอัปโหลด');
+            Toast.fire({ icon: 'error', title: 'เกิดข้อผิดพลาดในการอัปโหลด' });
         }
     } catch (err) {
         console.error(err);
-        alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+        Toast.fire({ icon: 'error', title: 'เกิดข้อผิดพลาดในการเชื่อมต่อ' });
     } finally {
         document.getElementById('uploadImgBtn').innerText = 'อัปโหลด';
         document.getElementById('uploadImgBtn').disabled = false;
@@ -90,7 +110,8 @@ document.getElementById('addLocBtn').addEventListener('click', () => {
     const lat = setupMarker.getLatLng().lat;
     const lng = setupMarker.getLatLng().lng;
 
-    customLocations.push({ id: customLocations.length + 1, name, imageUrl: img, lat, lng });
+    const imageUrlsArray = img.split(',').map(s=>s.trim()).filter(s=>s.length>0);
+    customLocations.push({ id: customLocations.length + 1, name, imageUrl: imageUrlsArray[0], imageUrls: imageUrlsArray, lat, lng });
     
     // Reset form
     document.getElementById('locName').value = '';
@@ -118,25 +139,24 @@ function updateLocationsList() {
     }
     
     saveBtn.style.display = 'inline-block';
-    
-    customLocations.forEach((loc, index) => {
-        list.innerHTML += `<div class="location-item" style="display: flex; gap: 1rem; align-items: center; background: white; border: 1px solid #e5e7eb; border-left: 4px solid var(--primary); padding: 0.8rem; border-radius: 8px; margin-bottom: 0.8rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-            <div style="width: 60px; height: 60px; border-radius: 6px; overflow: hidden; background: #f3f4f6; flex-shrink: 0;">
-                <img src="${loc.imageUrl}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://placehold.co/60x60?text=Error'">
-            </div>
-            <div>
-                <strong style="font-size: 1rem; color: #1f2937;">ข้อที่ ${index + 1}: ${loc.name}</strong><br>
-                <span style="font-size: 0.8rem; color: #6B7280;">พิกัด: ${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}</span>
-            </div>
-        </div>`;
-    });
+        customLocations.forEach((loc, index) => {
+            list.innerHTML += `<div class="location-item" style="display: flex; gap: 1rem; align-items: center; border-left: 4px solid var(--primary); padding: 0.8rem; border-radius: 8px; margin-bottom: 0.8rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                <div style="width: 60px; height: 60px; border-radius: 6px; overflow: hidden; background: var(--bg-dark); flex-shrink: 0;">
+                    <img src="${loc.imageUrls && loc.imageUrls.length > 0 ? loc.imageUrls[0] : loc.imageUrl}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://placehold.co/60x60?text=Error'">
+                </div>
+                <div>
+                    <strong style="font-size: 1rem; color: var(--text);">ข้อที่ ${index + 1}: ${loc.name}</strong><br>
+                    <span style="font-size: 0.85rem; color: var(--text-soft);">พิกัด: ${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}</span>
+                </div>
+            </div>`;
+        });
 }
 
 document.getElementById('saveSetBtn').addEventListener('click', () => {
     const setName = prompt("ตั้งชื่อชุดโจทย์นี้:");
     if (setName) {
         socket.emit('saveSet', { name: setName, locations: customLocations });
-        alert('บันทึกชุดโจทย์เรียบร้อยแล้ว!');
+        Toast.fire({ icon: 'success', title: 'บันทึกชุดโจทย์เรียบร้อยแล้ว!' });
     }
 });
 
@@ -149,7 +169,7 @@ document.getElementById('loadSetBtn').addEventListener('click', () => {
         customLocations = [...selectedSet.locations];
         updateLocationsList();
         checkStartGame();
-        alert('โหลดชุดโจทย์เรียบร้อยแล้ว!');
+        Toast.fire({ icon: 'success', title: 'โหลดชุดโจทย์เรียบร้อยแล้ว!' });
     }
 });
 
@@ -193,6 +213,19 @@ socket.on('roomCreated', (roomId) => {
     currentRoomId = roomId;
     document.getElementById('displayRoomId').innerText = roomId;
     console.log('Room created:', roomId);
+
+    // Generate QR Code
+    const qrContainer = document.getElementById('qrcode');
+    qrContainer.innerHTML = ''; // Clear previous QR
+    const joinUrl = window.location.origin + '/?room=' + roomId;
+    new QRCode(qrContainer, {
+        text: joinUrl,
+        width: 150,
+        height: 150,
+        colorDark : "#000000",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.H
+    });
 });
 
 let isGameOver = false;
@@ -255,7 +288,7 @@ socket.on('gameOver', (players) => {
 });
 
 socket.on('error', (msg) => {
-    alert(msg);
+    Swal.fire('แจ้งเตือน', msg, 'info');
 });
 
 function updateScoreboard(players) {

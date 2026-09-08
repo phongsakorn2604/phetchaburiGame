@@ -26,12 +26,13 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-app.post('/upload', upload.single('image'), (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ error: 'No file uploaded' });
+app.post('/upload', upload.array('images', 3), (req, res) => {
+    if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ error: 'No files uploaded' });
     }
-    // Return the URL to access the uploaded file
-    res.json({ imageUrl: '/uploads/' + req.file.filename });
+    // Return an array of URLs
+    const imageUrls = req.files.map(file => '/uploads/' + file.filename);
+    res.json({ imageUrls: imageUrls });
 });
 
 // Fallback to index.html for 404s
@@ -59,35 +60,35 @@ const rooms = {};
 const gameLocations = [
     {
         id: 1,
-        imageUrl: '/images/1.jpg',
+        imageUrls: ['/images/1.jpg'],
         lat: 48.8584,
         lng: 2.2945,
         name: 'Eiffel Tower, Paris'
     },
     {
         id: 2,
-        imageUrl: '/images/2.jpg',
+        imageUrls: ['/images/2.jpg'],
         lat: 51.5033,
         lng: -0.1195,
         name: 'London Eye, UK'
     },
     {
         id: 3,
-        imageUrl: '/images/3.jpg',
+        imageUrls: ['/images/3.jpg'],
         lat: 25.1972,
         lng: 55.2744,
         name: 'Burj Khalifa, Dubai'
     },
     {
         id: 4,
-        imageUrl: '/images/4.jpg',
+        imageUrls: ['/images/4.jpg'],
         lat: 41.8902,
         lng: 12.4922,
         name: 'Colosseum, Rome'
     },
     {
         id: 5,
-        imageUrl: '/images/5.jpg',
+        imageUrls: ['/images/5.jpg'],
         lat: 40.6892,
         lng: -74.0445,
         name: 'Statue of Liberty, New York'
@@ -107,18 +108,31 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     return R * c;
 }
 
-// Calculate score based on distance and remaining time
 function calculateScore(distanceKm, timeRemainingSeconds) {
-    // For a local/province scale game, a distance of 20-50km is considered far.
-    // Distance score: 0 to 200 points
-    let distanceScore = 200 * Math.exp(-distanceKm / 20); // Exponential decay (scale: 20km)
-    distanceScore = Math.max(0, Math.round(distanceScore));
+    let distanceScore = 0;
+    let distanceBonus = 0;
 
-    // Time bonus: up to 80 points (proportional to 25 seconds)
-    // If they guess instantly (25s), they get 80. If 0s, they get 0.
-    const timeBonus = Math.round((timeRemainingSeconds / 25) * 80);
+    // ระบบกำหนดระยะทางสูงสุดที่นำมาคำนวณคะแนนไว้ที่ 1 กิโลเมตร (1 km)
+    // หากเกิน 1 km จะไม่ได้คะแนนระยะทาง
+    if (distanceKm <= 1) {
+        // คะแนนลดลงตามสัดส่วนของระยะทาง (0 km = 100 คะแนน, 1 km = 0 คะแนน)
+        distanceScore = Math.round(100 * (1 - distanceKm));
+        
+        // หากระยะไม่เกิน 200 เมตร (0.2 km) ได้รับโบนัส +20 คะแนน
+        if (distanceKm <= 0.2) {
+            distanceBonus = 20;
+        }
+    }
 
-    return { distanceScore, timeBonus, total: distanceScore + timeBonus };
+    // คะแนนเวลา: ตอบเร็วได้คะแนนเยอะ (อิงจากเวลาเต็ม 15 วินาที, ให้สูงสุด 80 คะแนน)
+    const timeBonus = Math.round((timeRemainingSeconds / 15) * 80);
+
+    const totalDistancePoints = distanceScore + distanceBonus;
+    return { 
+        distanceScore: totalDistancePoints, 
+        timeBonus, 
+        total: totalDistancePoints + timeBonus 
+    };
 }
 
 io.on('connection', (socket) => {
@@ -201,14 +215,14 @@ io.on('connection', (socket) => {
 
         // Broadcast to players to start round (hide coordinates)
         io.to(roomId).emit('roundStarted', {
-            imageUrl: currentLocation.imageUrl,
+            imageUrls: currentLocation.imageUrls || [currentLocation.imageUrl], // Fallback for old saved sets
             round: room.currentRoundIndex + 1,
             totalRounds: room.locations.length,
-            timeLimit: 25
+            timeLimit: 15
         });
 
         // Start timer on server
-        let timeLeft = 25;
+        let timeLeft = 15;
         room.timerInterval = setInterval(() => {
             timeLeft--;
             if (timeLeft <= 0) {

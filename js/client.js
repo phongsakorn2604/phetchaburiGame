@@ -33,9 +33,9 @@ socket.on('playerJoined', (playersObj) => {
             item.style.justifyContent = 'center';
             item.style.gap = '0.2rem';
             item.style.padding = '0.5rem';
-            item.style.background = 'white';
+            item.style.background = 'var(--bg-dark)';
+            item.style.border = '1px solid var(--border)';
             item.style.borderRadius = '8px';
-            item.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
             item.style.position = 'relative';
             item.style.overflow = 'hidden';
             
@@ -44,7 +44,7 @@ socket.on('playerJoined', (playersObj) => {
             
             item.innerHTML = `
                 <div style="font-size: 1.8rem;">${p.avatar}</div>
-                <div style="font-weight: bold; font-size: 0.85rem; color: #374151; width: 100%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${p.name}">${p.name}</div>
+                <div style="font-weight: bold; font-size: 0.85rem; color: var(--text); width: 100%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${p.name}">${p.name}</div>
                 ${isMe}
             `;
             listContainer.appendChild(item);
@@ -128,17 +128,57 @@ socket.on('joined', () => {
 });
 
 socket.on('error', (msg) => {
-    alert(msg);
-    window.location.href = '/';
+    Swal.fire({
+        icon: 'error',
+        title: 'ข้อผิดพลาด',
+        text: msg,
+        background: 'var(--bg-dark)',
+        color: 'var(--text)',
+        confirmButtonColor: 'var(--primary)'
+    }).then(() => {
+        window.location.href = '/';
+    });
 });
 
 socket.on('roundStarted', (data) => {
     document.getElementById('waitingScreen').style.display = 'none';
     document.getElementById('resultModal').style.display = 'none';
     
-    document.getElementById('locationImage').src = data.imageUrl;
-    document.getElementById('locationImage').style.display = 'block';
+    const carouselContainer = document.getElementById('carouselContainer');
+    const indicator = document.getElementById('carouselIndicator');
+    
+    carouselContainer.innerHTML = '';
+    let urls = data.imageUrls || [data.imageUrl];
+    
+    urls.forEach((url, i) => {
+        carouselContainer.innerHTML += `<div class="carousel-slide"><img src="${url}"></div>`;
+    });
+    
+    carouselContainer.style.display = 'flex';
     document.getElementById('imagePlaceholder').style.display = 'none';
+    
+    const prevBtn = document.getElementById('prevImgBtn');
+    const nextBtn = document.getElementById('nextImgBtn');
+    
+    if (urls.length > 1) {
+        indicator.style.display = 'block';
+        indicator.innerText = `1 / ${urls.length}`;
+        
+        prevBtn.style.display = 'block';
+        nextBtn.style.display = 'block';
+        
+        prevBtn.onclick = () => carouselContainer.scrollBy({ left: -carouselContainer.clientWidth, behavior: 'smooth' });
+        nextBtn.onclick = () => carouselContainer.scrollBy({ left: carouselContainer.clientWidth, behavior: 'smooth' });
+        
+        carouselContainer.onscroll = () => {
+            let index = Math.round(carouselContainer.scrollLeft / carouselContainer.clientWidth);
+            indicator.innerText = `${index + 1} / ${urls.length}`;
+        };
+    } else {
+        indicator.style.display = 'none';
+        prevBtn.style.display = 'none';
+        nextBtn.style.display = 'none';
+    }
     
     // Reset map
     if (currentMarker) map.removeLayer(currentMarker);
@@ -234,10 +274,11 @@ socket.on('guessResult', (data) => {
         document.getElementById('resultLocationName').innerText = data.actualLocation.name;
         
         if (data.distance !== null) {
-            document.getElementById('resultDistance').innerText = data.distance.toFixed(1);
-            document.getElementById('resultDistanceScore').innerText = data.distanceScore;
-            document.getElementById('resultTimeBonus').innerText = data.timeBonus;
-            document.getElementById('resultTotalScore').innerText = data.total;
+            const distDisplay = data.distance < 1 ? (data.distance * 1000).toFixed(0) + ' ม.' : data.distance.toFixed(2) + ' กม.';
+            document.getElementById('resultDistance').innerText = distDisplay;
+            document.getElementById('resultDistanceScore').innerText = '+' + data.distanceScore;
+            document.getElementById('resultTimeBonus').innerText = '+' + data.timeBonus;
+            document.getElementById('resultTotalScore').innerText = '+' + data.total;
         } else {
             document.getElementById('resultDistance').innerText = 'ไม่ได้ตอบ (หมดเวลา)';
             document.getElementById('resultDistanceScore').innerText = '0';

@@ -10,6 +10,7 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="css/style.css">
     <style>
         body, button { font-family: 'Kanit', sans-serif; }
@@ -52,6 +53,70 @@
             display: flex; justify-content: center; align-items: center;
         }
         
+        /* Image Carousel */
+        .carousel-container {
+            width: 100%; height: 100%;
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none; /* Firefox */
+        }
+        .carousel-container::-webkit-scrollbar { display: none; } /* Chrome */
+        .carousel-slide {
+            min-width: 100%; height: 100%;
+            scroll-snap-align: start;
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+            padding: 20px;
+        }
+        .carousel-slide img { 
+            width: 100%; height: 100%; 
+            object-fit: contain; 
+            border-radius: 8px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.5);
+        }
+        
+        .carousel-indicator {
+            position: absolute;
+            top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            z-index: 5;
+            pointer-events: none;
+            display: none;
+        }
+        
+        /* Carousel Navigation Buttons */
+        .carousel-btn {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            background: rgba(0,0,0,0.5); color: white;
+            border: none; font-size: 2rem; padding: 1rem 0.5rem;
+            cursor: pointer; z-index: 5; display: none;
+            border-radius: 8px; transition: 0.3s;
+        }
+        .carousel-btn:hover { background: rgba(0,0,0,0.8); }
+        .carousel-btn.prev { left: 10px; }
+        .carousel-btn.next { right: 10px; }
+
+        /* Map Fixes */
+        #map { flex: 1; min-height: 250px; width: 100%; border-radius: 8px; z-index: 1; }
+        .map-controls { margin-top: 10px; display: flex; justify-content: center; }
+        
+        /* Header Fixes */
+        .game-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 20px; background: rgba(20, 37, 61, 0.95);
+            color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 20;
+        }
+        .player-info, .timer-container, .score-container {
+            display: flex; align-items: center; gap: 8px; font-size: 1.1rem;
+        }
+
         /* Status Message Overlay */
         #statusOverlay {
             position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
@@ -66,17 +131,17 @@
     <!-- Waiting Screen -->
     <div id="waitingScreen" class="overlay">
         <div class="card text-center" style="max-width: 95%; width: 600px; position: relative;">
-            <button onclick="window.location.href='/'" style="position: absolute; top: 15px; left: 15px; background: #f3f4f6; border: none; font-size: 1rem; cursor: pointer; color: #4B5563; display: flex; align-items: center; gap: 0.3rem; padding: 0.4rem 0.8rem; border-radius: 8px; transition: 0.2s;">
+            <button onclick="window.location.href='/'" style="position: absolute; top: 15px; left: 15px; background: rgba(255,255,255,0.1); border: none; font-size: 1rem; cursor: pointer; color: var(--text-soft); display: flex; align-items: center; gap: 0.3rem; padding: 0.4rem 0.8rem; border-radius: 8px; transition: 0.2s;">
                 &larr; กลับ
             </button>
             <h2 style="margin-top: 0.5rem;">รอแอดมินเริ่มเกม...</h2>
             <p>คุณอยู่ในห้อง: <strong id="roomCodeDisplay"></strong></p>
             
-            <div style="margin: 1.5rem 0; text-align: left; background: #f9fafb; border-radius: 8px; padding: 1rem; border: 1px solid #e5e7eb; max-height: 250px; overflow-y: auto;">
-                <h3 style="font-size: 1rem; color: #4B5563; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 0.8rem; margin-top: 0;">ผู้เล่นที่รออยู่ (<span id="waitingPlayerCount">0</span>)</h3>
-                <div id="waitingPlayerList" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.8rem;">
+            <div style="margin: 1.5rem 0; text-align: left; background: var(--card-light); border-radius: 8px; padding: 1rem; border: 1px solid var(--border); max-height: 250px; overflow-y: auto;">
+                <h3 style="font-size: 1rem; color: var(--text-soft); border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 0.8rem; margin-top: 0;">ผู้เล่นที่รออยู่ (<span id="waitingPlayerCount">0</span>)</h3>
+                <div id="waitingPlayerList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 0.8rem;">
                     <!-- Player list injected here -->
-                    <div style="color: #9CA3AF; text-align: center; font-size: 0.9rem; grid-column: 1 / -1;">กำลังโหลดรายชื่อ...</div>
+                    <div style="color: var(--text-soft); text-align: center; font-size: 0.9rem; grid-column: 1 / -1;">กำลังโหลดรายชื่อ...</div>
                 </div>
             </div>
 
@@ -93,7 +158,7 @@
                 <span id="playerNameDisplay"></span>
             </div>
             <div class="timer-container">
-                ⏱️ <span id="timeDisplay">25</span> วินาที
+                ⏱️ <span id="timeDisplay">15</span> วินาที
             </div>
             <div class="score-container">
                 คะแนน: <span id="scoreDisplay">0</span>
@@ -104,7 +169,10 @@
         <div class="game-content">
             <!-- Left: Image (Now Full Screen) -->
             <div class="image-section card">
-                <img id="locationImage" src="" alt="ที่นี่คือที่ไหน?" style="display: none;">
+                <div id="carouselIndicator" class="carousel-indicator">1/1</div>
+                <button id="prevImgBtn" class="carousel-btn prev">&#10094;</button>
+                <div id="carouselContainer" class="carousel-container" style="display: none;"></div>
+                <button id="nextImgBtn" class="carousel-btn next">&#10095;</button>
                 <div id="imagePlaceholder">รอเริ่มรอบต่อไป...</div>
             </div>
 
@@ -129,19 +197,37 @@
     </div>
 
     <!-- Result Modal -->
-    <div id="resultModal" class="overlay" style="display: none;">
-        <div class="card result-card text-center">
-            <h2 id="resultTitle">สรุปผลรอบนี้</h2>
-            <p id="resultLocationName" class="font-bold"></p>
-            <p>ความคลาดเคลื่อน: <span id="resultDistance"></span> กม.</p>
+    <div id="resultModal" class="overlay" style="display: none; z-index: 9999;">
+        <div class="card result-card text-center" style="width: 90%; max-width: 400px; padding: 2rem; border-top: 5px solid var(--primary); background: var(--bg-dark); box-shadow: 0 15px 40px rgba(0,0,0,0.5);">
+            <div style="font-size: 3.5rem; margin-bottom: 0.5rem; line-height: 1;">🎯</div>
+            <h2 id="resultTitle" style="color: var(--primary); margin: 0 0 1rem 0; font-size: 1.8rem; text-shadow: 0 2px 10px rgba(255,122,0,0.3);">สรุปผลรอบนี้</h2>
             
-            <div class="points-breakdown">
-                <div>คะแนนระยะทาง: +<span id="resultDistanceScore"></span></div>
-                <div>โบนัสเวลา: +<span id="resultTimeBonus"></span></div>
-                <div class="total-points">รวม: +<span id="resultTotalScore"></span></div>
+            <div style="background: var(--card-light); padding: 1rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1.5rem;">
+                <p id="resultLocationName" class="font-bold" style="font-size: 1.1rem; color: var(--text); margin: 0; line-height: 1.4;"></p>
             </div>
             
-            <p class="mt-4 text-sm text-gray">กำลังเริ่มรอบถัดไปอัตโนมัติ...</p>
+            <div style="margin-bottom: 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(0,0,0,0.3); padding: 0.5rem 1.2rem; border-radius: 20px;">
+                <span style="color: var(--text-soft); font-size: 0.95rem;">📍 ความคลาดเคลื่อน:</span> 
+                <strong id="resultDistance" style="color: var(--secondary); font-size: 1.2rem;"></strong>
+            </div>
+            
+            <div class="points-breakdown" style="display: grid; gap: 0.8rem; text-align: left; background: var(--card-light); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-soft); font-size: 0.95rem;">🗺️ คะแนนระยะทาง</span>
+                    <strong id="resultDistanceScore" style="color: var(--success); font-size: 1.1rem;"></strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-soft); font-size: 0.95rem;">⏱️ โบนัสเวลา</span>
+                    <strong id="resultTimeBonus" style="color: var(--success); font-size: 1.1rem;"></strong>
+                </div>
+                <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.1); margin: 0.5rem 0;">
+                <div class="total-points" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: bold; font-size: 1.1rem; color: var(--text);">🏆 รวมคะแนน</span>
+                    <strong id="resultTotalScore" style="color: var(--primary); font-size: 1.8rem; text-shadow: 0 0 15px rgba(255,122,0,0.3);"></strong>
+                </div>
+            </div>
+            
+            <p class="text-sm" style="color: var(--text-soft); margin-top: 2rem; margin-bottom: 0; animation: fadePulse 1.5s infinite;">⏳ กำลังเริ่มรอบถัดไปอัตโนมัติ...</p>
         </div>
     </div>
 
