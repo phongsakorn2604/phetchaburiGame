@@ -180,28 +180,31 @@ io.on('connection', (socket) => {
 
     socket.on('saveSet', async (setObj) => {
         setObj.id = Date.now().toString();
-        
         try {
-            const { error } = await supabase
-                .from('saved_sets')
-                .insert([{ 
-                    id: setObj.id, 
-                    name: setObj.name, 
-                    locations: setObj.locations 
-                }]);
-            
-            if (error) {
-                console.error('Error saving to Supabase:', error);
-                socket.emit('error', 'Failed to save set to database');
-                return;
-            }
-            
+            const { error } = await supabase.from('saved_sets').insert([{ id: setObj.id, name: setObj.name, locations: setObj.locations }]);
+            if (error) { socket.emit('error', 'Failed to save set to database'); return; }
             savedSets.push(setObj);
             io.emit('savedSets', savedSets);
-        } catch(e) {
-            console.error('Exception during saveSet:', e);
-            socket.emit('error', 'Server error saving set');
-        }
+        } catch(e) { socket.emit('error', 'Server error saving set'); }
+    });
+
+    socket.on('updateSet', async (setObj) => {
+        try {
+            const { error } = await supabase.from('saved_sets').update({ name: setObj.name, locations: setObj.locations }).eq('id', setObj.id);
+            if (error) { socket.emit('error', 'Failed to update set'); return; }
+            const index = savedSets.findIndex(s => s.id === setObj.id);
+            if (index !== -1) { savedSets[index] = setObj; }
+            io.emit('savedSets', savedSets);
+        } catch(e) { socket.emit('error', 'Server error updating set'); }
+    });
+
+    socket.on('deleteSet', async (setId) => {
+        try {
+            const { error } = await supabase.from('saved_sets').delete().eq('id', setId);
+            if (error) { socket.emit('error', 'Failed to delete set'); return; }
+            savedSets = savedSets.filter(s => s.id !== setId);
+            io.emit('savedSets', savedSets);
+        } catch(e) { socket.emit('error', 'Server error deleting set'); }
     });
 
     // Player joins a room
