@@ -40,19 +40,29 @@ app.use((req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-const DATA_FILE = path.join(__dirname, 'saved_sets.json');
+const { createClient } = require('@supabase/supabase-js');
+const supabaseUrl = process.env.SUPABASE_URL || 'https://hzibytcdjyncsowmznyw.supabase.co';
+const supabaseKey = process.env.SUPABASE_KEY || 'sb_publishable_ulnQyeMBoZsri-h1_AbGYQ_bu_TdWFA';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 let savedSets = [];
-if (fs.existsSync(DATA_FILE)) {
+
+async function loadSavedSetsFromSupabase() {
     try {
-        savedSets = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-    } catch (e) {
-        console.error('Error reading saved sets:', e);
+        const { data, error } = await supabase.from('saved_sets').select('*');
+        if (error) {
+            console.error('Error fetching from Supabase:', error);
+        } else if (data) {
+            savedSets = data;
+            console.log(`Loaded ${savedSets.length} sets from Supabase`);
+        }
+    } catch(e) {
+        console.error('Failed to load sets from Supabase', e);
     }
 }
 
-function saveSetsToFile() {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(savedSets, null, 2));
-}
+// Load sets initially
+loadSavedSetsFromSupabase();
 
 const rooms = {};
 
@@ -158,12 +168,30 @@ io.on('connection', (socket) => {
         socket.emit('savedSets', savedSets);
     });
 
-    socket.on('saveSet', (setObj) => {
+    socket.on('saveSet', async (setObj) => {
         setObj.id = Date.now().toString();
-        savedSets.push(setObj);
-        saveSetsToFile();
-        // Broadcast to all admins that a new set is available
-        io.emit('savedSets', savedSets);
+        
+        try {
+            const { error } = await supabase
+                .from('saved_sets')
+                .insert([{ 
+                    id: setObj.id, 
+                    name: setObj.name, 
+                    locations: setObj.locations 
+                }]);
+            
+            if (error) {
+                console.error('Error saving to Supabase:', error);
+                socket.emit('error', 'Failed to save set to database');
+                return;
+            }
+            
+            savedSets.push(setObj);
+            io.emit('savedSets', savedSets);
+        } catch(e) {
+            console.error('Exception during saveSet:', e);
+            socket.emit('error', 'Server error saving set');
+        }
     });
 
     // Player joins a room
