@@ -856,3 +856,6 @@ body::after {
 .admin-qr {
     animation-delay: .15s;
 }
+/* Fix SweetAlert2 z-index */
+.swal2-container { z-index: 10000 !important; }
+
