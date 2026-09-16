@@ -285,6 +285,29 @@ socket.on('savedSets', (sets) => {
 function checkStartGame() {
     const playerCount = Object.keys(currentPlayers).length;
     
+    // Update the Dashboard Dashboard Info
+    const setNameEl = document.getElementById('currentSetName');
+    const setListEl = document.getElementById('currentSetList');
+    if (setNameEl && setListEl) {
+        if (customLocations.length > 0) {
+            let setName = 'โจทย์ปรับแต่งเอง (Custom)';
+            if (currentLoadedSetId) {
+                const loadedSet = savedSetsData.find(s => s.id === currentLoadedSetId);
+                if (loadedSet) setName = loadedSet.name;
+            }
+            setNameEl.innerText = setName;
+            
+            let listHtml = '';
+            customLocations.forEach((loc, i) => {
+                listHtml += `<div style="margin-bottom: 3px;">${i+1}. ${loc.name}</div>`;
+            });
+            setListEl.innerHTML = listHtml;
+        } else {
+            setNameEl.innerText = 'ยังไม่เลือกชุดโจทย์';
+            setListEl.innerHTML = 'ไม่มีสถานที่';
+        }
+    }
+    
     if (playerCount > 0 && customLocations.length > 0) {
         document.getElementById('startRoundBtn').disabled = false;
         if (isGameOver) {
