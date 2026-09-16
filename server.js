@@ -156,8 +156,8 @@ function calculateScore(distanceKm, timeRemainingSeconds) {
         }
     }
 
-    // คะแนนเวลา: ตอบเร็วได้คะแนนเยอะ (อิงจากเวลาเต็ม 15 วินาที, ให้สูงสุด 80 คะแนน)
-    const timeBonus = Math.round((timeRemainingSeconds / 15) * 80);
+    // คะแนนเวลา: ตอบเร็วได้คะแนนเยอะ (อิงจากเวลาเต็ม 25 วินาที, ให้สูงสุด 50 คะแนน)
+    const timeBonus = Math.round((timeRemainingSeconds / 25) * 50);
 
     const totalDistancePoints = distanceScore + distanceBonus;
     return { 
@@ -281,11 +281,11 @@ io.on('connection', (socket) => {
             imageUrls: currentLocation.imageUrls || [currentLocation.imageUrl], // Fallback for old saved sets
             round: room.currentRoundIndex + 1,
             totalRounds: room.locations.length,
-            timeLimit: 15
+            timeLimit: 25
         });
 
         // Start timer on server
-        let timeLeft = 15;
+        let timeLeft = 25;
         room.timerInterval = setInterval(() => {
             timeLeft--;
             if (timeLeft <= 0) {
