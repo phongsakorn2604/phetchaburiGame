@@ -13,26 +13,51 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.static(__dirname));
 
-// Multer setup for image uploads
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, path.join(__dirname, 'uploads'));
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname);
-        cb(null, file.fieldname + '-' + uniqueSuffix + ext);
-    }
-});
-const upload = multer({ storage: storage });
+const { createClient } = require('@supabase/supabase-js');
+const supabaseUrl = process.env.SUPABASE_URL || 'https://hzibytcdjyncsowmznyw.supabase.co';
+const supabaseKey = process.env.SUPABASE_KEY || 'sb_publishable_ulnQyeMBoZsri-h1_AbGYQ_bu_TdWFA';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-app.post('/upload', upload.array('images', 3), (req, res) => {
+// Multer setup for Supabase Storage
+const upload = multer({ storage: multer.memoryStorage() });
+
+app.post('/upload', upload.array('images', 3), async (req, res) => {
     if (!req.files || req.files.length === 0) {
         return res.status(400).json({ error: 'No files uploaded' });
     }
-    // Return an array of URLs
-    const imageUrls = req.files.map(file => '/uploads/' + file.filename);
-    res.json({ imageUrls: imageUrls });
+    
+    try {
+        const imageUrls = [];
+        for (const file of req.files) {
+            const ext = path.extname(file.originalname);
+            const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${ext}`;
+            
+            // Upload to Supabase 'images' bucket
+            const { data, error } = await supabase.storage
+                .from('images')
+                .upload(fileName, file.buffer, {
+                    contentType: file.mimetype,
+                    upsert: false
+                });
+                
+            if (error) {
+                console.error('Supabase upload error:', error);
+                return res.status(500).json({ error: 'Failed to upload to Supabase' });
+            }
+            
+            // Get public URL
+            const { data: publicUrlData } = supabase.storage
+                .from('images')
+                .getPublicUrl(fileName);
+                
+            imageUrls.push(publicUrlData.publicUrl);
+        }
+        
+        res.json({ imageUrls: imageUrls });
+    } catch(err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error during upload' });
+    }
 });
 
 // Fallback to index.html for 404s
@@ -40,10 +65,7 @@ app.use((req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-const { createClient } = require('@supabase/supabase-js');
-const supabaseUrl = process.env.SUPABASE_URL || 'https://hzibytcdjyncsowmznyw.supabase.co';
-const supabaseKey = process.env.SUPABASE_KEY || 'sb_publishable_ulnQyeMBoZsri-h1_AbGYQ_bu_TdWFA';
-const supabase = createClient(supabaseUrl, supabaseKey);
+
 
 let savedSets = [];
 
