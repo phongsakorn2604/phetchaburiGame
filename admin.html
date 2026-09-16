@@ -71,7 +71,10 @@
                 <div style="flex: 1; min-width: 300px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem;">
                         <h3 style="margin: 0;">📋 รายการสถานที่ที่จะเล่น (<span id="locCount" style="color: var(--primary);">0</span>)</h3>
-                        <button id="saveSetBtn" class="btn secondary" style="width: auto; padding: 0.4rem 1rem; font-size: 0.9rem; display: none; background: #10B981; color: white; border: none;">💾 บันทึกเป็นชุดโจทย์</button>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button id="updateSetBtn" class="btn primary" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.9rem; display: none; background: #3b82f6; color: white; border: none; border-radius: 8px;">🔄 อัปเดตชุดโจทย์เดิม</button>
+                            <button id="saveSetBtn" class="btn secondary" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.9rem; display: none; background: #10B981; color: white; border: none; border-radius: 8px;">💾 บันทึกเป็นชุดใหม่</button>
+                        </div>
                     </div>
                     <div id="locationsList" style="max-height: 350px; overflow-y: auto; margin-top: 1rem;">
                         <p class="text-gray text-sm" style="color: var(--text-soft);">ยังไม่มีสถานที่ กรุณาเพิ่มสถานที่ทางซ้าย</p>
