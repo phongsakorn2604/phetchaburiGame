@@ -164,8 +164,18 @@ io.on('connection', (socket) => {
     });
 
     // Saved Sets Logic
-    socket.on('getSavedSets', () => {
-        socket.emit('savedSets', savedSets);
+    socket.on('getSavedSets', async () => {
+        try {
+            const { data, error } = await supabase.from('saved_sets').select('*');
+            if (data && !error) {
+                savedSets = data;
+                socket.emit('savedSets', savedSets);
+            } else {
+                socket.emit('savedSets', savedSets); // fallback
+            }
+        } catch(e) {
+            socket.emit('savedSets', savedSets);
+        }
     });
 
     socket.on('saveSet', async (setObj) => {
