@@ -131,48 +131,144 @@ function updateLocationsList() {
     document.getElementById('locCount').innerText = customLocations.length;
     const list = document.getElementById('locationsList');
     const saveBtn = document.getElementById('saveSetBtn');
+    const updateBtn = document.getElementById('updateSetBtn');
     
     list.innerHTML = '';
     if (customLocations.length === 0) {
         list.innerHTML = '<div style="text-align: center; padding: 2rem; color: #9CA3AF;">ยังไม่มีสถานที่ กรุณาเพิ่มสถานที่ทางซ้าย</div>';
         saveBtn.style.display = 'none';
+        if (updateBtn) updateBtn.style.display = 'none';
         return;
     }
     
     saveBtn.style.display = 'inline-block';
-        customLocations.forEach((loc, index) => {
-            list.innerHTML += `<div class="location-item" style="display: flex; gap: 1rem; align-items: center; border-left: 4px solid var(--primary); padding: 0.8rem; border-radius: 8px; margin-bottom: 0.8rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                <div style="width: 60px; height: 60px; border-radius: 6px; overflow: hidden; background: var(--bg-dark); flex-shrink: 0;">
+    if (updateBtn) updateBtn.style.display = currentLoadedSetId ? 'inline-block' : 'none';
+
+    customLocations.forEach((loc, index) => {
+        list.innerHTML += `<div class="location-item" style="display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--primary); padding: 0.8rem; border-radius: 8px; margin-bottom: 0.8rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); background: var(--bg-dark);">
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <div style="width: 60px; height: 60px; border-radius: 6px; overflow: hidden; background: #000; flex-shrink: 0;">
                     <img src="${loc.imageUrls && loc.imageUrls.length > 0 ? loc.imageUrls[0] : loc.imageUrl}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://placehold.co/60x60?text=Error'">
                 </div>
                 <div>
                     <strong style="font-size: 1rem; color: var(--text);">ข้อที่ ${index + 1}: ${loc.name}</strong><br>
                     <span style="font-size: 0.85rem; color: var(--text-soft);">พิกัด: ${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}</span>
                 </div>
-            </div>`;
-        });
+            </div>
+            <button onclick="deleteLocation(${index})" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #e74c3c; padding: 0.5rem;" title="ลบสถานที่นี้">❌</button>
+        </div>`;
+    });
 }
 
+window.deleteLocation = function(index) {
+    Swal.fire({
+        title: 'ยืนยันการลบ?',
+        text: 'ต้องการลบสถานที่นี้ออกจากรายการใช่หรือไม่?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ลบเลย',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#e74c3c'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            customLocations.splice(index, 1);
+            updateLocationsList();
+        }
+    });
+};
+
 document.getElementById('saveSetBtn').addEventListener('click', () => {
-    const setName = prompt("ตั้งชื่อชุดโจทย์นี้:");
-    if (setName) {
-        socket.emit('saveSet', { name: setName, locations: customLocations });
-        Toast.fire({ icon: 'success', title: 'บันทึกชุดโจทย์เรียบร้อยแล้ว!' });
+    if (customLocations.length === 0) {
+        Toast.fire({ icon: 'warning', title: 'ไม่มีสถานที่สำหรับบันทึก' });
+        return;
     }
+    Swal.fire({
+        title: 'บันทึกเป็นชุดใหม่',
+        input: 'text',
+        inputLabel: 'ตั้งชื่อชุดโจทย์ใหม่',
+        inputPlaceholder: 'เช่น: เพชรบุรี (ยาก)',
+        showCancelButton: true,
+        confirmButtonText: 'บันทึกใหม่',
+        cancelButtonText: 'ยกเลิก'
+    }).then((result) => {
+        if (result.isConfirmed && result.value) {
+            socket.emit('saveSet', { name: result.value, locations: customLocations });
+            Toast.fire({ icon: 'success', title: 'บันทึกชุดโจทย์ใหม่เรียบร้อย!' });
+        }
+    });
 });
+
+const updateSetBtn = document.getElementById('updateSetBtn');
+if (updateSetBtn) {
+    updateSetBtn.addEventListener('click', () => {
+        if (!currentLoadedSetId || customLocations.length === 0) return;
+        const selectedSet = savedSetsData.find(s => s.id === currentLoadedSetId);
+        Swal.fire({
+            title: 'อัปเดตชุดโจทย์เดิม?',
+            text: `ต้องการอัปเดตข้อมูลทับชุดโจทย์ "${selectedSet ? selectedSet.name : 'เดิม'}" ใช่หรือไม่?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'อัปเดตทับเลย',
+            cancelButtonText: 'ยกเลิก'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                socket.emit('updateSet', { id: currentLoadedSetId, name: selectedSet.name, locations: customLocations });
+                Toast.fire({ icon: 'success', title: 'อัปเดตชุดโจทย์เรียบร้อย!' });
+            }
+        });
+    });
+}
 
 document.getElementById('loadSetBtn').addEventListener('click', () => {
     const setId = document.getElementById('savedSetsSelect').value;
-    if (!setId) return;
-    
+    if (!setId) {
+        Toast.fire({ icon: 'warning', title: 'กรุณาเลือกชุดโจทย์ที่ต้องการโหลด' });
+        return;
+    }
     const selectedSet = savedSetsData.find(s => s.id === setId);
     if (selectedSet) {
         customLocations = [...selectedSet.locations];
+        currentLoadedSetId = selectedSet.id;
         updateLocationsList();
         checkStartGame();
         Toast.fire({ icon: 'success', title: 'โหลดชุดโจทย์เรียบร้อยแล้ว!' });
     }
 });
+
+document.getElementById('savedSetsSelect').addEventListener('change', (e) => {
+    const btn = document.getElementById('deleteSetBtn');
+    if (btn) btn.style.display = e.target.value ? 'inline-block' : 'none';
+});
+
+const deleteSetBtn = document.getElementById('deleteSetBtn');
+if (deleteSetBtn) {
+    deleteSetBtn.addEventListener('click', () => {
+        const setId = document.getElementById('savedSetsSelect').value;
+        if (!setId) return;
+        const selectedSet = savedSetsData.find(s => s.id === setId);
+        Swal.fire({
+            title: 'ยืนยันการลบชุดโจทย์?',
+            text: `คุณต้องการลบ "${selectedSet.name}" ถาวรใช่หรือไม่?`,
+            icon: 'error',
+            showCancelButton: true,
+            confirmButtonText: 'ลบถาวร',
+            cancelButtonText: 'ยกเลิก',
+            confirmButtonColor: '#e74c3c'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                socket.emit('deleteSet', setId);
+                if (currentLoadedSetId === setId) {
+                    currentLoadedSetId = null;
+                    customLocations = [];
+                }
+                document.getElementById('savedSetsSelect').value = '';
+                document.getElementById('deleteSetBtn').style.display = 'none';
+                updateLocationsList();
+                Toast.fire({ icon: 'success', title: 'ลบชุดโจทย์เรียบร้อย' });
+            }
+        });
+    });
+}
 
 socket.on('savedSets', (sets) => {
     savedSetsData = sets;
