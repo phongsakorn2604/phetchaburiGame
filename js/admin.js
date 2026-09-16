@@ -340,6 +340,29 @@ socket.on('roomCreated', (roomId) => {
     });
 });
 
+// Click QR code to enlarge
+document.getElementById('qrcode').addEventListener('click', function() {
+    const canvas = this.querySelector('canvas');
+    const img = this.querySelector('img');
+    let src = '';
+    if (canvas) src = canvas.toDataURL();
+    else if (img) src = img.src;
+    
+    if (src) {
+        Swal.fire({
+            title: 'สแกนเพื่อเข้าร่วม',
+            imageUrl: src,
+            imageWidth: 400,
+            imageHeight: 400,
+            imageAlt: 'QR Code',
+            showConfirmButton: false,
+            showCloseButton: true,
+            background: '#fff',
+            color: '#000'
+        });
+    }
+});
+
 let isGameOver = false;
 
 socket.on('playerJoined', (players) => {
