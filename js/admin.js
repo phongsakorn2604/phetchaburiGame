@@ -125,6 +125,7 @@ document.getElementById('addLocBtn').addEventListener('click', () => {
 });
 
 let savedSetsData = [];
+let currentLoadedSetId = null;
 
 function updateLocationsList() {
     document.getElementById('locCount').innerText = customLocations.length;
