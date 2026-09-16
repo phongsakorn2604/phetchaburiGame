@@ -286,25 +286,17 @@ function checkStartGame() {
     const playerCount = Object.keys(currentPlayers).length;
     
     // Update the Dashboard Dashboard Info
-    const setNameEl = document.getElementById('currentSetName');
     const setListEl = document.getElementById('currentSetList');
-    if (setNameEl && setListEl) {
+    if (setListEl) {
         if (customLocations.length > 0) {
             let setName = 'โจทย์ปรับแต่งเอง (Custom)';
             if (currentLoadedSetId) {
                 const loadedSet = savedSetsData.find(s => s.id === currentLoadedSetId);
                 if (loadedSet) setName = loadedSet.name;
             }
-            setNameEl.innerText = setName;
-            
-            let listHtml = '';
-            customLocations.forEach((loc, i) => {
-                listHtml += `<div style="margin-bottom: 3px;">${i+1}. ${loc.name}</div>`;
-            });
-            setListEl.innerHTML = listHtml;
+            setListEl.innerHTML = `<div style="font-size: 1.1rem; color: var(--primary); font-weight: bold; text-align: center; padding: 1rem 0;">${setName}</div>`;
         } else {
-            setNameEl.innerText = 'ยังไม่เลือกชุดโจทย์';
-            setListEl.innerHTML = 'ไม่มีสถานที่';
+            setListEl.innerHTML = 'ยังไม่มีโจทย์ที่เลือก';
         }
     }
     
